@@ -55,7 +55,5 @@ USER appuser
 HEALTHCHECK --interval=20s --timeout=5s --start-period=40s --retries=5 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-EXPOSE 8000
-
-# Start Uvicorn production server
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start Uvicorn production server (binds dynamically to Render's $PORT or 8000)
+CMD sh -c "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"

@@ -24,7 +24,16 @@ llm = ChatGroq(
     max_tokens=400
 )
 
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+# Lazy-load SentenceTransformer with single-thread optimization to stay under 512MB RAM
+_embedding_model = None
+
+def get_embedding_model():
+    global _embedding_model
+    if _embedding_model is None:
+        import torch
+        torch.set_num_threads(1)
+        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _embedding_model
 
 @observe() # This decorator tells Langfuse to track everything this function does
 def extract_text_from_pdf(pdf_bytes: bytes) -> str:
@@ -44,7 +53,7 @@ def chunk_text(text: str, max_tokens: int = 500) -> list[str]:
 def build_vector_index(db: Session, document_id: str, chunks: list[str]):
     if not chunks:
         return
-    embeddings = embedding_model.encode(chunks, convert_to_numpy=True)
+    embeddings = get_embedding_model().encode(chunks, convert_to_numpy=True)
     for i, chunk in enumerate(chunks):
         doc_chunk = models.DocumentChunk(
             document_id=document_id,
@@ -64,7 +73,7 @@ def summarize_text(text: str) -> str:
 @observe()
 def query_index(db: Session, document_id: str, question: str, top_k=3) -> str:
     """This function acts as a Tool for the Agent to search the PDF."""
-    query_embedding = embedding_model.encode([question], convert_to_numpy=True)[0].tolist()
+    query_embedding = get_embedding_model().encode([question], convert_to_numpy=True)[0].tolist()
     closest_chunks = db.query(models.DocumentChunk).filter(
         models.DocumentChunk.document_id == document_id
     ).order_by(
