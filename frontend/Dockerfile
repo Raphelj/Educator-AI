@@ -13,6 +13,10 @@ COPY frontend/package*.json ./
 # Deterministic install using package-lock.json with network retry resilience
 RUN npm ci --fetch-retries=5 --fetch-retry-factor=2 --fetch-retry-mintimeout=10000
 
+# Accept build argument for the backend API URL (injected by Render/Docker)
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # Copy source code and build production bundle
 COPY frontend/ ./
 RUN npm run build
