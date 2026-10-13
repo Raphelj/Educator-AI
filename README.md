@@ -1,11 +1,14 @@
 # Educator AI — Enterprise Document Intelligence Platform
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Render-46E3B7.svg?style=for-the-badge&logo=render&logoColor=white)](https://educator-ai-frontend.onrender.com/)
 [![Enterprise CI Pipeline](https://github.com/Raphelj/Educator-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/Raphelj/Educator-AI/actions/workflows/ci.yml)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-4169E1.svg?logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
 [![LangGraph](https://img.shields.io/badge/LangGraph-Agentic_AI-FF6F00.svg)](https://www.langchain.com/langgraph)
 [![Docker](https://img.shields.io/badge/Docker-Multi--Stage-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com)
 [![Langfuse](https://img.shields.io/badge/Langfuse-Observability-000000.svg)](https://langfuse.com)
+
+> 🚀 **Live Production Application:** [https://educator-ai-frontend.onrender.com](https://educator-ai-frontend.onrender.com/)
 
 **Educator AI** is an enterprise-grade document intelligence platform designed to ingest complex multi-page PDF documents, perform semantic indexing into a high-concurrency vector database, and orchestrate autonomous multi-turn reasoning with real-time observability.
 
