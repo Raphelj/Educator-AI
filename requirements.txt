@@ -1,7 +1,0 @@
-pymupdf
-faiss-cpu
-sentence-transformers
-groq
-gradio
-reportlab
-python-dotenv
