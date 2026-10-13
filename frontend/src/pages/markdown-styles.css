@@ -1,0 +1,85 @@
+.markdown-container {
+  font-family: inherit;
+  line-height: 1.6;
+  color: var(--text-main);
+}
+
+.markdown-container h1,
+.markdown-container h2,
+.markdown-container h3 {
+  color: var(--primary-accent);
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-container p {
+  margin-bottom: 1rem;
+}
+
+.markdown-container strong {
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Lists */
+.markdown-container ul,
+.markdown-container ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.markdown-container li {
+  margin-bottom: 0.25rem;
+}
+
+/* Tables */
+.markdown-container table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.markdown-container th,
+.markdown-container td {
+  border: 1px solid var(--surface-border);
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.markdown-container th {
+  background-color: rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  color: var(--primary-accent);
+}
+
+.markdown-container tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Code blocks */
+.markdown-container pre {
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  border: 1px solid var(--surface-border);
+}
+
+.markdown-container code {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: #a5b4fc;
+}
+
+.markdown-container pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+}
