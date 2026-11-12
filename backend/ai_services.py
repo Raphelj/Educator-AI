@@ -53,7 +53,11 @@ def chunk_text(text: str, max_tokens: int = 500) -> list[str]:
 def build_vector_index(db: Session, document_id: str, chunks: list[str]):
     if not chunks:
         return
-    embeddings = get_embedding_model().encode(chunks, convert_to_numpy=True)
+    import gc
+    # Encode with small batch_size=8 to prevent RAM spikes on 512MB instances
+    model = get_embedding_model()
+    embeddings = model.encode(chunks, batch_size=8, convert_to_numpy=True, show_progress_bar=False)
+    
     for i, chunk in enumerate(chunks):
         doc_chunk = models.DocumentChunk(
             document_id=document_id,
@@ -62,6 +66,7 @@ def build_vector_index(db: Session, document_id: str, chunks: list[str]):
         )
         db.add(doc_chunk)
     db.commit()
+    gc.collect()
 
 @observe()
 def summarize_text(text: str) -> str:
