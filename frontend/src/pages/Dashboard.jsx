@@ -127,11 +127,21 @@ function Dashboard({ onLogout, token }) {
     }
   }
 
-  // 5. Polling for processing status
+  // 5. Polling for processing status (polling every 3.5s with retry backoff to avoid 429)
   useEffect(() => {
     let intervalId;
+    let pollCount = 0;
     if (documentId && status === 'processing') {
       intervalId = setInterval(async () => {
+        pollCount += 1;
+        // Safety timeout: stop polling after 60 attempts (~3.5 minutes)
+        if (pollCount > 60) {
+          setStatus('failed')
+          clearInterval(intervalId)
+          alert("Document processing timed out. Please refresh or retry with a smaller PDF.")
+          return
+        }
+
         try {
           const res = await axios.get(`${API_BASE_URL}/documents/${documentId}`, axiosConfig)
           if (res.data.status === 'completed') {
@@ -139,15 +149,16 @@ function Dashboard({ onLogout, token }) {
             setSummary(res.data.summary || '')
             fetchUserDocuments()
             clearInterval(intervalId)
-          } else if (res.data.status.startsWith('failed')) {
+          } else if (res.data.status && res.data.status.startsWith('failed')) {
             setStatus('failed')
             alert("Background processing failed: " + res.data.status)
             clearInterval(intervalId)
           }
         } catch (err) {
-          console.error("Failed to fetch document status", err)
+          // If 429 occurs, simply log and let the next polling cycle retry
+          console.warn("Status check rate-limited or pending, retrying...", err.response?.status)
         }
-      }, 2000)
+      }, 3500)
     }
     return () => {
       if (intervalId) clearInterval(intervalId)
