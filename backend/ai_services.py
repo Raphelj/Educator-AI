@@ -35,15 +35,6 @@ def get_embedding_model():
         _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
     return _embedding_model
 
-def unload_embedding_model():
-    """Unloads the PyTorch model from RAM after heavy embedding jobs to keep memory < 200MB."""
-    global _embedding_model
-    if _embedding_model is not None:
-        import gc
-        del _embedding_model
-        _embedding_model = None
-        gc.collect()
-
 @observe() # This decorator tells Langfuse to track everything this function does
 def extract_text_from_pdf(pdf_bytes: bytes) -> str:
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -62,23 +53,15 @@ def chunk_text(text: str, max_tokens: int = 500) -> list[str]:
 def build_vector_index(db: Session, document_id: str, chunks: list[str]):
     if not chunks:
         return
-    import gc
-    try:
-        # Encode with small batch_size=8 to prevent RAM spikes on 512MB instances
-        model = get_embedding_model()
-        embeddings = model.encode(chunks, batch_size=8, convert_to_numpy=True, show_progress_bar=False)
-        
-        for i, chunk in enumerate(chunks):
-            doc_chunk = models.DocumentChunk(
-                document_id=document_id,
-                content=chunk,
-                embedding=embeddings[i].tolist()
-            )
-            db.add(doc_chunk)
-        db.commit()
-    finally:
-        # Crucial for 512MB RAM: unload model immediately after processing PDF
-        unload_embedding_model()
+    embeddings = get_embedding_model().encode(chunks, convert_to_numpy=True)
+    for i, chunk in enumerate(chunks):
+        doc_chunk = models.DocumentChunk(
+            document_id=document_id,
+            content=chunk,
+            embedding=embeddings[i].tolist()
+        )
+        db.add(doc_chunk)
+    db.commit()
 
 @observe()
 def summarize_text(text: str) -> str:
@@ -90,20 +73,16 @@ def summarize_text(text: str) -> str:
 @observe()
 def query_index(db: Session, document_id: str, question: str, top_k=3) -> str:
     """This function acts as a Tool for the Agent to search the PDF."""
-    try:
-        query_embedding = get_embedding_model().encode([question], convert_to_numpy=True)[0].tolist()
-        closest_chunks = db.query(models.DocumentChunk).filter(
-            models.DocumentChunk.document_id == document_id
-        ).order_by(
-            models.DocumentChunk.embedding.l2_distance(query_embedding)
-        ).limit(top_k).all()
-        
-        if not closest_chunks:
-            return "No relevant information found in the document."
-        return "\n".join([chunk.content for chunk in closest_chunks])
-    finally:
-        # Keep RAM lean after query
-        unload_embedding_model()
+    query_embedding = get_embedding_model().encode([question], convert_to_numpy=True)[0].tolist()
+    closest_chunks = db.query(models.DocumentChunk).filter(
+        models.DocumentChunk.document_id == document_id
+    ).order_by(
+        models.DocumentChunk.embedding.l2_distance(query_embedding)
+    ).limit(top_k).all()
+    
+    if not closest_chunks:
+        return "No relevant information found in the document."
+    return "\n".join([chunk.content for chunk in closest_chunks])
 
 from langfuse.langchain import CallbackHandler
 

@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import axios from 'axios'
 import './index.css'
 
 import Login from './pages/Login'
@@ -17,26 +16,8 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('token')
-    localStorage.removeItem('last_document_id')
     setToken(null)
   }
-
-  // Global Axios 401 Interceptor: Automatically log out if session expired
-  useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response && error.response.status === 401) {
-          handleLogout()
-        }
-        return Promise.reject(error)
-      }
-    )
-
-    return () => {
-      axios.interceptors.response.eject(interceptor)
-    }
-  }, [])
 
   return (
     <Router>

@@ -59,11 +59,7 @@ function Dashboard({ onLogout, token }) {
         selectDocument(res.data[0].id, res.data[0].filename)
       }
     } catch (err) {
-      if (err.response?.status === 401) {
-        onLogout()
-      } else {
-        console.error("Failed to load documents", err)
-      }
+      console.error("Failed to load documents", err)
     }
   }
 
@@ -131,62 +127,31 @@ function Dashboard({ onLogout, token }) {
     }
   }
 
-  // 5. Polling for processing status (Exponential backoff to prevent 429 rate limiting)
+  // 5. Polling for processing status
   useEffect(() => {
-    let timeoutId;
-    let pollCount = 0;
-    let delay = 3000; // Start at 3 seconds
-    let isCancelled = false;
-
-    const pollStatus = async () => {
-      if (isCancelled || !documentId || status !== 'processing') return;
-
-      pollCount += 1;
-      // Stop after ~3.5 minutes
-      if (pollCount > 35) {
-        setStatus('failed');
-        alert("Document processing is taking longer than expected. Please check your connection or try a smaller PDF.");
-        return;
-      }
-
-      try {
-        const res = await axios.get(`${API_BASE_URL}/documents/${documentId}`, axiosConfig);
-        if (res.data.status === 'completed') {
-          setStatus('completed');
-          setSummary(res.data.summary || '');
-          fetchUserDocuments();
-          return;
-        } else if (res.data.status && res.data.status.startsWith('failed')) {
-          setStatus('failed');
-          alert("Background processing failed: " + res.data.status);
-          return;
-        }
-        // Increase interval up to 8s to avoid hammering Render
-        delay = Math.min(delay + 1000, 8000);
-      } catch (err) {
-        if (err.response?.status === 401) {
-          onLogout();
-          return;
-        }
-        // If 429 rate limited, back off more aggressively (wait 8s)
-        if (err.response?.status === 429) {
-          delay = 8000;
-        }
-      }
-
-      if (!isCancelled) {
-        timeoutId = setTimeout(pollStatus, delay);
-      }
-    };
-
+    let intervalId;
     if (documentId && status === 'processing') {
-      timeoutId = setTimeout(pollStatus, delay);
+      intervalId = setInterval(async () => {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/documents/${documentId}`, axiosConfig)
+          if (res.data.status === 'completed') {
+            setStatus('completed')
+            setSummary(res.data.summary || '')
+            fetchUserDocuments()
+            clearInterval(intervalId)
+          } else if (res.data.status.startsWith('failed')) {
+            setStatus('failed')
+            alert("Background processing failed: " + res.data.status)
+            clearInterval(intervalId)
+          }
+        } catch (err) {
+          console.error("Failed to fetch document status", err)
+        }
+      }, 2000)
     }
-
     return () => {
-      isCancelled = true;
-      if (timeoutId) clearTimeout(timeoutId);
-    };
+      if (intervalId) clearInterval(intervalId)
+    }
   }, [documentId, status])
 
   // 6. Handle file upload

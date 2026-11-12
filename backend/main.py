@@ -93,19 +93,14 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 from fastapi import BackgroundTasks
 
-def process_document_in_background(document_id: str, file_bytes: bytes):
-    """
-    Background worker for document processing.
-    Creates its own isolated database session to avoid thread race conditions.
-    """
-    db = database.SessionLocal()
+def process_document_in_background(document_id: str, file_bytes: bytes, db: Session):
     try:
         # Step 1: Heavy Extraction & Summarization
         text_content = ai_services.extract_text_from_pdf(file_bytes)
         summary = ai_services.summarize_text(text_content)
         chunks = ai_services.chunk_text(text_content)
         
-        # Step 2: Vector Embedding (CPU intensive)
+        # Step 2: Vector Embedding (Very CPU intensive)
         ai_services.build_vector_index(db, document_id, chunks)
         
         # Step 3: Update Document status to complete
@@ -116,16 +111,10 @@ def process_document_in_background(document_id: str, file_bytes: bytes):
             db.commit()
     except Exception as e:
         # Update Document status to failed if something crashes
-        try:
-            db.rollback()
-            doc = db.query(models.Document).filter(models.Document.id == document_id).first()
-            if doc:
-                doc.status = f"failed: {str(e)}"
-                db.commit()
-        except Exception:
-            pass
-    finally:
-        db.close()
+        doc = db.query(models.Document).filter(models.Document.id == document_id).first()
+        if doc:
+            doc.status = f"failed: {str(e)}"
+            db.commit()
 
 @app.post("/upload")
 async def upload_pdf(
@@ -151,8 +140,8 @@ async def upload_pdf(
         db.add(new_doc)
         db.commit()
         
-        # Offload all the heavy AI work to background task with fresh DB session
-        background_tasks.add_task(process_document_in_background, document_id, file_bytes)
+        # Offload all the heavy AI work to a background thread
+        background_tasks.add_task(process_document_in_background, document_id, file_bytes, db)
         
         # Return instantly to the user so their browser doesn't freeze
         return {
