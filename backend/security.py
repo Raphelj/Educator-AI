@@ -8,7 +8,9 @@ import bcrypt
 # In production, this MUST be in your .env file.
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super-secret-development-key-please-change-in-production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+# Keep user signed in for 7 days (7 * 24 * 60 minutes) to avoid frequent session timeouts
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
+
 
 
 # --- Functions ---

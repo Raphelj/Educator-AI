@@ -59,7 +59,11 @@ function Dashboard({ onLogout, token }) {
         selectDocument(res.data[0].id, res.data[0].filename)
       }
     } catch (err) {
-      console.error("Failed to load documents", err)
+      if (err.response?.status === 401) {
+        onLogout()
+      } else {
+        console.error("Failed to load documents", err)
+      }
     }
   }
 
